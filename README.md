@@ -1,0 +1,82 @@
+# Dead Simple Result With Error Tracing
+
+A single header simple wrapper structs that allows golang and rust like error handling with error 
+traces.
+
+Supports [tl::expected](https://github.com/TartanLlama/expected), 
+[expected lite](https://github.com/martinmoene/expected-lite.git),
+[std expected](https://cppreference.com/w/cpp/header/expected.html) or custom expected like container.
+
+Just do `#include "DSResult/DSResult.hpp"` and it is good to go.
+
+By default it uses `tl::expected`, if nothing is instructed. Define the following macro to choose 
+a different backend
+
+```cpp
+#define DS_USE_TL_EXPECTED 1
+#define DS_USE_EXPECTED_LITE 1
+#define DS_USE_STD_EXPECTED 1
+#define DS_USE_CUSTOM_EXPECTED 1
+```
+
+If you are using a custom expected like container, you need to define the macros `DS_EXPECTED_TYPE` 
+and `DS_UNEXPECTED_TYPE`. For example, 
+
+```cpp
+#define DS_EXPECTED_TYPE MyNamespace::MyExpected        //MyNamespace::MyExpected<T, E>
+#define DS_UNEXPECTED_TYPE MyNamespace::MyUnexpected    //MyNamespace::MyUnexpected<E>
+```
+
+---
+
+## Usage
+
+### Function that uses DS::Result
+```cpp
+DS::Result<int> MyFunction(...);
+```
+
+### Return error message
+```cpp
+int myValue;
+return DS::Error(DS_ERROR_MSG("Something wrong: " + DS_STR(myValue)));
+```
+
+### Return if assertion fails
+```cpp
+std::vector<int> myData;
+DS_ASSERT_RETURN(!myData.empty());  //Returns DS::Error if `myData.empty()` is true
+```
+
+### Check result, append trace and return if error
+```cpp
+DS::Result<void> MyFunction()
+{
+    DS::Result<int> functionResult = MyFunction();
+    DS_CHECKED_RETURN(functionResult);
+    return {};
+}
+```
+
+### Get error trace if a function failed
+```cpp
+#include <iostream>
+int main()
+{
+    DS::Result<void> result = MyFunction();
+    if(!result.has_value())
+    {
+        DS::ErrorTrace errorTrace = DS_APPEND_TRACE(result.error());
+        //Error:
+        //  ...
+        //
+        //Stack trace
+        //  at ...
+        //  at ...
+        //  ...
+        std::cout << errorTrace.ToString() << std::endl;
+        return 1;
+    }
+    return 0;
+}
+```
