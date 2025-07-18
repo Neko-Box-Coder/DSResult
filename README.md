@@ -1,13 +1,13 @@
 # Dead Simple Result With Error Tracing
 
-A single header simple wrapper structs that allows golang and rust like error handling with error 
-traces.
+A single header only simple C++11 struct for allowing golang/rust like error handling and tracing
+with expected like container
 
 Supports [tl::expected](https://github.com/TartanLlama/expected), 
 [expected lite](https://github.com/martinmoene/expected-lite.git),
 [std expected](https://cppreference.com/w/cpp/header/expected.html) or custom expected like container.
 
-Just do `#include "DSResult/DSResult.hpp"` and it is good to go.
+Just add `Include` to your project include path and do `#include "DSResult/DSResult.hpp"`.
 
 By default it uses `tl::expected`, if nothing is instructed. Define the following macro to choose 
 a different backend
@@ -31,12 +31,24 @@ and `DS_UNEXPECTED_TYPE`. For example,
 
 ## Usage
 
-### Function that uses DS::Result
+### Type Definitions
+```cpp
+template<typename T>
+using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
+using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+```
+
+See the respective expected and unexpected type on how to use them, but mainly the following
+- `bool DS::Result<T>::has_value()`
+- `T& DS::Result<T>::value()`
+- `DS::Error DS::Result<T>::error()`
+
+### Function Declaration that uses DS::Result
 ```cpp
 DS::Result<int> MyFunction(...);
 ```
 
-### Return error message
+### Returning an error message
 ```cpp
 int myValue;
 return DS::Error(DS_ERROR_MSG("Something wrong: " + DS_STR(myValue)));
@@ -54,6 +66,7 @@ DS::Result<void> MyFunction()
 {
     DS::Result<int> functionResult = MyFunction();
     DS_CHECKED_RETURN(functionResult);
+    int myInt = functioonResult.value();
     return {};
 }
 ```

@@ -25,15 +25,21 @@ DS::Result<void> FunctionAppendTrace()
 int main()
 {
     std::string resultString;
+    int myInt = 0;
+    (void)myInt;
     
     DS::Result<int> intResult = FunctionWithAssert(2);
     if(!intResult.has_value())
         resultString += DS_APPEND_TRACE(intResult.error()).ToString() + "\n";
+    else
+        myInt = intResult.value();
     
     intResult = FunctionWithAssert(0);
     if(!intResult.has_value())
         resultString += DS_APPEND_TRACE(intResult.error()).ToString() + "\n\n";
-    
+    else
+        myInt = intResult.value();
+
     DS::Result<void> voidResult = FunctionAppendTrace();
     if(!voidResult.has_value())
     {
@@ -48,7 +54,7 @@ int main()
 
 Stack trace:
   at ExampleCommon.cpp:14 in FunctionWithAssert()
-  at ExampleCommon.cpp:35 in main()
+  at ExampleCommon.cpp:39 in main()
 
 Error:
   Something wrong: 12345
@@ -56,11 +62,12 @@ Error:
 Stack trace:
   at ExampleCommon.cpp:9 in FunctionWithMsg()
   at ExampleCommon.cpp:21 in FunctionAppendTrace()
-  at ExampleCommon.cpp:40 in main())";
+  at ExampleCommon.cpp:46 in main())";
     
     if(resultString != expectedResultString)
     {
         std::cout << "Failed" << std::endl;
+        std::cout << expectedResultString << std::endl;
         return 1;
     }
     
