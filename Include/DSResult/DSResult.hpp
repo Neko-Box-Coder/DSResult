@@ -9,19 +9,19 @@
     #define DS_USE_TL_EXPECTED 1
 #endif
 
-#if DS_USE_TL_EXPECTED
+#if defined(DS_USE_TL_EXPECTED) && DS_USE_TL_EXPECTED
     #include "tl/expected.hpp"
     #define DS_EXPECTED_TYPE tl::expected
     #define DS_UNEXPECTED_TYPE tl::unexpected
-#elif DS_USE_EXPECTED_LITE
+#elif defined(DS_USE_EXPECTED_LITE) && DS_USE_EXPECTED_LITE
     #include "nonstd/expected.hpp"
     #define DS_EXPECTED_TYPE nonstd::expected
     #define DS_UNEXPECTED_TYPE nonstd::unexpected_type
-#elif DS_USE_STD_EXPECTED
+#elif defined(DS_USE_STD_EXPECTED) && DS_USE_STD_EXPECTED
     #include <expected>
     #define DS_EXPECTED_TYPE std::expected
     #define DS_UNEXPECTED_TYPE std::unexpected
-#elif DS_USE_CUSTOM_EXPECTED
+#elif defined(DS_USE_CUSTOM_EXPECTED) && DS_USE_CUSTOM_EXPECTED
     //User custom expected
     #if !defined(DS_EXPECTED_TYPE) || !defined(DS_UNEXPECTED_TYPE)
         static_assert(false,    "DS_EXPECTED_TYPE and DS_UNEXPECTED_TYPE must be defined for custom "
@@ -32,15 +32,18 @@
                             "DS_USE_CUSTOM_EXPECTED must be defined");
 #endif
 
+#if __cplusplus >= 201402L
+    #define INTERNAL_DS_FUNC_CONSTEXPR constexpr
+#else
+    #define INTERNAL_DS_FUNC_CONSTEXPR
+#endif
+
 #include <string>
 #include <vector>
 
 namespace
 {
-    #if __cplusplus >= 201402L
-        constexpr 
-    #endif
-    const char* DSGetFileName(const char* path) 
+    inline INTERNAL_DS_FUNC_CONSTEXPR const char* DSGetFileName(const char* path) 
     {
         const char* lastSlash = path;
         const char* curr = path;
@@ -60,10 +63,9 @@ namespace DS
     {
         const char* Function;
         const char* File;
-        const int Line;
-        #if __cplusplus >= 201402L
-            constexpr 
-        #endif
+        int Line;
+
+        inline INTERNAL_DS_FUNC_CONSTEXPR 
         TraceElement(   const char* func, 
                         const char* filepath, 
                         const int line) :   Function(func),
@@ -71,7 +73,20 @@ namespace DS
                                             Line(line)
         {}
 
-        std::string ToString() const 
+        inline TraceElement& operator=(const TraceElement& other)
+        {
+            Function = other.Function;
+            File = other.File;
+            Line = other.Line;
+            return *this;
+        }
+
+        inline TraceElement(const TraceElement& other)
+        {
+            *this = other;
+        }
+
+        inline std::string ToString() const 
         {
             return  std::string(File) + ":" + std::to_string(Line) + " in " + std::string(Function) + 
                     "()";
@@ -84,7 +99,7 @@ namespace DS
         std::vector<TraceElement> Stack;
 
         //Constructor for new error
-        ErrorTrace( const std::string& msg, 
+        inline ErrorTrace( const std::string& msg, 
                     const char* func, 
                     const char* file, 
                     const int line) : Message(msg)
@@ -92,12 +107,12 @@ namespace DS
             Stack.emplace_back(func, file, line);
         }
 
-        void AppendTrace(const char* func, const char* file, const int line)
+        inline void AppendTrace(const char* func, const char* file, const int line)
         {
             Stack.emplace_back(func, file, line);
         }
 
-        operator std::string() const 
+        inline operator std::string() const 
         {
             std::string result = "Error:\n  " + Message + "\n\nStack trace:";
             for(const TraceElement& trace : Stack)
@@ -106,7 +121,7 @@ namespace DS
             return result;
         }
 
-        std::string ToString() const 
+        inline std::string ToString() const 
         {
             return static_cast<std::string>(*this);
         }
