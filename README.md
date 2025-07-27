@@ -54,15 +54,15 @@ int myValue;
 return DS::Error(DS_ERROR_MSG("Something wrong: " + DS_STR(myValue)));
 ```
 
-### Return if assertion fails
+### Return error if assertion fails
 ```cpp
 std::vector<int> myData;
 DS_ASSERT_RETURN(!myData.empty());  //Returns DS::Error if `myData.empty()` is true
 ```
 
-### Check result, append trace and return if error
+### Check result, append to trace and return if there's an error
 ```cpp
-DS::Result<void> MyFunction()
+DS::Result<void> MyVoidFunction()
 {
     DS::Result<int> functionResult = MyFunction();
     DS_CHECKED_RETURN(functionResult);
@@ -71,7 +71,7 @@ DS::Result<void> MyFunction()
 }
 ```
 
-### Get error trace if a function failed
+### Get the error trace if a function failed
 ```cpp
 #include <iostream>
 int main()
