@@ -32,10 +32,12 @@
                             "DS_USE_CUSTOM_EXPECTED must be defined");
 #endif
 
-#if __cplusplus >= 201402L
-    #define INTERNAL_DS_FUNC_CONSTEXPR constexpr
+#if __cplusplus >= 202002L
+    #define INTERNAL_DS_FUNC_CONSTEVAL consteval
+#elif __cplusplus >= 201402L
+    #define INTERNAL_DS_FUNC_CONSTEVAL constexpr
 #else
-    #define INTERNAL_DS_FUNC_CONSTEXPR
+    #define INTERNAL_DS_FUNC_CONSTEVAL
 #endif
 
 #include <string>
@@ -43,7 +45,7 @@
 
 namespace
 {
-    inline INTERNAL_DS_FUNC_CONSTEXPR const char* DSGetFileName(const char* path) 
+    inline INTERNAL_DS_FUNC_CONSTEVAL const char* DSGetFileName(const char* path) 
     {
         const char* lastSlash = path;
         const char* curr = path;
@@ -59,29 +61,49 @@ namespace
 
 namespace DS
 {
+    #define INTERNAL_DS_CONCAT(a, b) a ## b
+    #define INTERNAL_DS_COMPOSE(a, b) a b
+    #define INTERNAL_DS_TEMP_NANE INTERNAL_DS_COMPOSE(INTERNAL_DS_CONCAT, (dsResult, __LINE__))
+    
     struct TraceElement
     {
         const char* Function;
         const char* File;
         int Line;
 
-        inline INTERNAL_DS_FUNC_CONSTEXPR 
+        inline INTERNAL_DS_FUNC_CONSTEVAL
         TraceElement(   const char* func, 
                         const char* filepath, 
                         const int line) :   Function(func),
-                                            File(DSGetFileName(filepath)),
+                                            File(filepath),
                                             Line(line)
         {}
 
         inline TraceElement& operator=(const TraceElement& other)
+        {
+            if(this != &other)
+            {
+                Function = other.Function;
+                File = other.File;
+                Line = other.Line;
+            }
+            return *this;
+        }
+
+        inline TraceElement(const TraceElement& other)
+        {
+            *this = other;
+        }
+        
+        inline TraceElement& operator=(TraceElement&& other)
         {
             Function = other.Function;
             File = other.File;
             Line = other.Line;
             return *this;
         }
-
-        inline TraceElement(const TraceElement& other)
+        
+        inline TraceElement(TraceElement&& other)
         {
             *this = other;
         }
@@ -99,17 +121,41 @@ namespace DS
         std::vector<TraceElement> Stack;
 
         //Constructor for new error
-        inline ErrorTrace( const std::string& msg, 
-                    const char* func, 
-                    const char* file, 
-                    const int line) : Message(msg)
+        inline ErrorTrace(const std::string& msg, const TraceElement& element) : Message(msg)
         {
-            Stack.emplace_back(func, file, line);
+            Stack.emplace_back(element);
         }
 
-        inline void AppendTrace(const char* func, const char* file, const int line)
+        inline ErrorTrace& operator=(const ErrorTrace& other)
         {
-            Stack.emplace_back(func, file, line);
+            if(this != &other)
+            {
+                Message = std::move(other.Message);
+                Stack = std::move(other.Stack);
+            }
+            return *this;
+        }
+
+        inline ErrorTrace(const ErrorTrace& other)
+        {
+            *this = other;
+        }
+        
+        inline ErrorTrace& operator=(ErrorTrace&& other)
+        {
+            Message = other.Message;
+            Stack = other.Stack;
+            return *this;
+        }
+        
+        inline ErrorTrace(ErrorTrace&& other)
+        {
+            *this = other;
+        }
+
+        inline void AppendTrace(const TraceElement& element)
+        {
+            Stack.push_back(element);
         }
 
         inline operator std::string() const 
@@ -131,15 +177,51 @@ namespace DS
     using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
     using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
 
-    #define DS_ERROR_MSG(msg) DS::ErrorTrace(msg, __func__, __FILE__, __LINE__)
+    #define DS_ERROR_MSG(msg) \
+        DS::Error(DS::ErrorTrace(msg, DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)))
     #define DS_STR(nonStr) std::to_string(nonStr)
-    #define DS_APPEND_TRACE(prev) (prev.AppendTrace(__func__, __FILE__, __LINE__), prev) 
+    #define DS_APPEND_TRACE(prev) \
+        (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)), prev)
+    
     #define DS_CHECKED_RETURN(resultVar) \
-        if(!resultVar.has_value()) \
-            return DS::Error(DS_APPEND_TRACE(resultVar.error()));
+        do \
+        { \
+            if(!resultVar.has_value()) \
+                return DS::Error(DS_APPEND_TRACE(resultVar.error())); \
+        } \
+        while(false)
+    
+    #define DS_UNWRAP_VOID_RETURN(op) \
+        do \
+        { \
+            auto INTERNAL_DS_TEMP_NANE = op; \
+            DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE); \
+        } \
+        while(false)
+    
+    #define DS_UNWRAP_RETURN(unwrapVar, op) \
+        auto INTERNAL_DS_TEMP_NANE = op; \
+        DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE); \
+        unwrapVar = INTERNAL_DS_TEMP_NANE.value()
+
     #define DS_ASSERT_RETURN(op) \
-        if(!(op)) \
-            return DS::Error(DS_ERROR_MSG("Expression \"" #op "\" has failed."));
+        do \
+        { \
+            if(!(op)) \
+                return DS::Error(DS_ERROR_MSG("Expression \"" #op "\" has failed.")); \
+        } \
+        while(false)
+
+    #define DS_UNWRAP_VOID(op) DS_UNWRAP_VOID_RETURN(op)
+    #define DS_UNWRAP_DECL(unwrapVar, op) DS_UNWRAP_RETURN(unwrapVar, op)
+    #define DS_UNWRAP_ASSIGN(unwrapVar, op) \
+        do \
+        { \
+            DS_UNWRAP_RETURN(unwrapVar, op); \
+        } \
+        while(false)
+    #define DS_CHECK(resultVar) DS_CHECKED_RETURN(resultVar)
+    #define DS_ASSERT(op) DS_ASSERT_RETURN(op)
 }
 
 #endif

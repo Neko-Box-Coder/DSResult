@@ -19,6 +19,13 @@ a different backend
 #define DS_USE_CUSTOM_EXPECTED 1
 ```
 
+You can integrate DSResult to your cmake project easily with
+```cmake
+add_subdirectory("path/to/DSResult")
+add_subdirectory("path/to/expected") # Or other expected libraries
+target_link_libraries(yourTarget PRIVATE DSResult expected)
+```
+
 If you are using a custom expected like container, you need to define the macros `DS_EXPECTED_TYPE` 
 and `DS_UNEXPECTED_TYPE`. For example, 
 
@@ -32,10 +39,15 @@ and `DS_UNEXPECTED_TYPE`. For example,
 ## Usage
 
 ### Type Definitions
+
+The following types are defined
 ```cpp
-template<typename T>
-using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
-using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+namespace DS
+{
+    template<typename T>
+    using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
+    using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+}
 ```
 
 See the respective expected and unexpected type on how to use them, but mainly the following
@@ -51,24 +63,29 @@ DS::Result<int> MyFunction(...);
 ### Returning an error message
 ```cpp
 int myValue;
-return DS::Error(DS_ERROR_MSG("Something wrong: " + DS_STR(myValue)));
+return DS_ERROR_MSG("Something wrong: " + DS_STR(myValue));
 ```
 
-### Return error if assertion fails
+### Returning an error if assertion fails
 ```cpp
 std::vector<int> myData;
-DS_ASSERT_RETURN(!myData.empty());  //Returns DS::Error if `myData.empty()` is true
+DS_ASSERT(!myData.empty());  //Returns DS::Error if `myData.empty()` is true
 ```
 
-### Check result, append to trace and return if there's an error
+### Unwrapping to a variable (Or append backtrace and return error if failed)
 ```cpp
 DS::Result<void> MyVoidFunction()
 {
-    DS::Result<int> functionResult = MyFunction();
-    DS_CHECKED_RETURN(functionResult);
-    int myInt = functioonResult.value();
+    //Declaring a variable and unwrap to it
+    DS_UNWRAP_DECL(int myInt, MyFunction());
+    
+    //Unwrap and assigning to existing variable
+    DS_UNWRAP_ASSIGN(myInt, MyFunction());
     return {};
 }
+
+//Unwrapping a void function
+DS_UNWRAP_VOID(MyVoidFunction());
 ```
 
 ### Get the error trace if a function failed
@@ -79,7 +96,7 @@ int main()
     DS::Result<void> result = MyFunction();
     if(!result.has_value())
     {
-        DS::ErrorTrace errorTrace = DS_APPEND_TRACE(result.error());
+        std::cout << result.error().ToString() << std::endl;
         //Error:
         //  ...
         //
@@ -87,7 +104,9 @@ int main()
         //  at ...
         //  at ...
         //  ...
-        std::cout << errorTrace.ToString() << std::endl;
+        
+        //or this to show the current line as final stack trace
+        std::cout << DS_APPEND_TRACE(result.error()).ToString() << std::endl;
         return 1;
     }
     return 0;
