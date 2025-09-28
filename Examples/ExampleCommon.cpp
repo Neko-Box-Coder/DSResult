@@ -12,7 +12,7 @@ DS::Result<int> FunctionWithMsg()
 
 DS::Result<int> FunctionWithAssert(int testVar)
 {
-    DS_ASSERT(testVar != 0);
+    DS_ASSERT_NOT_EQ(testVar, 0);
     return testVar * 2;
 }
 
@@ -41,6 +41,71 @@ DS::Result<void> FunctionWithUnwrapAssign()
 DS::Result<void> FunctionWithUnwrapVoid()
 {
     DS_UNWRAP_VOID(FunctionWithUnwrapAssign());
+    return {};
+}
+
+bool ReturnBool(bool returnVal)
+{
+    if(true)
+        return returnVal;
+    
+    return !returnVal;
+}
+
+int ReturnInt(int returnVal)
+{
+    if(true)
+        return returnVal;
+    
+    return returnVal - 5;
+}
+
+DS::Result<void> AssertExample(int assertIndex)
+{
+    //Positive
+    if(assertIndex == 0)
+    {
+        DS_ASSERT_TRUE(ReturnBool(true));
+        DS_ASSERT_FALSE(ReturnBool(false));
+        DS_ASSERT_EQ(ReturnInt(5), 5);
+        DS_ASSERT_NOT_EQ(ReturnInt(5), 4);
+        DS_ASSERT_GT(ReturnInt(7), 6);
+        DS_ASSERT_GT_EQ(ReturnInt(7), 6);
+        DS_ASSERT_LT(ReturnInt(3), 4);
+        DS_ASSERT_LT_EQ(ReturnInt(3), 4);
+    }
+    //Error cases
+    else
+    {
+        switch(assertIndex)
+        {
+            case 1:
+                DS_ASSERT_TRUE(ReturnBool(false));
+                break;
+            case 2:
+                DS_ASSERT_FALSE(ReturnBool(true));
+                break;
+            case 3:
+                DS_ASSERT_EQ(ReturnInt(5), 4);
+                break;
+            case 4:
+                DS_ASSERT_NOT_EQ(ReturnInt(5), 5);
+                break;
+            case 5:
+                DS_ASSERT_GT(ReturnInt(5), 6);
+                break;
+            case 6:
+                DS_ASSERT_GT_EQ(ReturnInt(5), 6);
+                break;
+            case 7:
+                DS_ASSERT_LT(ReturnInt(5), 4);
+                break;
+            case 8:
+                DS_ASSERT_LT_EQ(ReturnInt(5), 4);
+                break;
+        }
+    }
+    
     return {};
 }
 
@@ -78,14 +143,21 @@ int main()
     if(!voidResult.has_value())
         resultString += DS_APPEND_TRACE(voidResult.error()).ToString() + "\n---------\n";
     
+    for(int i = 0; i < 9; ++i)
+    {
+        voidResult = AssertExample(i);
+        if(!voidResult.has_value())
+            resultString += DS_APPEND_TRACE(voidResult.error()).ToString() + "\n---------\n";
+    }
+    
     std::cout << resultString << std::endl;
     
     std::string expectedResultString = R"(Error:
-  Expression "testVar != 0" has failed.
+  Expression "0 != 0" has failed.
 
 Stack trace:
   at ExampleCommon.cpp:15 in FunctionWithAssert()
-  at ExampleCommon.cpp:61 in main()
+  at ExampleCommon.cpp:126 in main()
 ---------
 Error:
   Something wrong: 12345
@@ -93,7 +165,7 @@ Error:
 Stack trace:
   at ExampleCommon.cpp:10 in FunctionWithMsg()
   at ExampleCommon.cpp:22 in FunctionWithCheck()
-  at ExampleCommon.cpp:67 in main()
+  at ExampleCommon.cpp:132 in main()
 ---------
 Error:
   Something wrong: 12345
@@ -101,7 +173,7 @@ Error:
 Stack trace:
   at ExampleCommon.cpp:10 in FunctionWithMsg()
   at ExampleCommon.cpp:28 in FunctionWithUnwrapDecl()
-  at ExampleCommon.cpp:71 in main()
+  at ExampleCommon.cpp:136 in main()
 ---------
 Error:
   Something wrong: 12345
@@ -109,7 +181,7 @@ Error:
 Stack trace:
   at ExampleCommon.cpp:10 in FunctionWithMsg()
   at ExampleCommon.cpp:36 in FunctionWithUnwrapAssign()
-  at ExampleCommon.cpp:75 in main()
+  at ExampleCommon.cpp:140 in main()
 ---------
 Error:
   Something wrong: 12345
@@ -118,7 +190,63 @@ Stack trace:
   at ExampleCommon.cpp:10 in FunctionWithMsg()
   at ExampleCommon.cpp:36 in FunctionWithUnwrapAssign()
   at ExampleCommon.cpp:43 in FunctionWithUnwrapVoid()
-  at ExampleCommon.cpp:79 in main()
+  at ExampleCommon.cpp:144 in main()
+---------
+Error:
+  Expression "0 == 1" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:83 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "1 == 0" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:86 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 == 4" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:89 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 != 5" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:92 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 > 6" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:95 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 >= 6" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:98 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 < 4" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:101 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
+---------
+Error:
+  Expression "5 <= 4" has failed.
+
+Stack trace:
+  at ExampleCommon.cpp:104 in AssertExample()
+  at ExampleCommon.cpp:150 in main()
 ---------
 )";
 

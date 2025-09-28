@@ -69,7 +69,16 @@ return DS_ERROR_MSG("Something wrong: " + DS_STR(myValue));
 ### Returning an error if assertion fails
 ```cpp
 std::vector<int> myData;
-DS_ASSERT(!myData.empty());  //Returns DS::Error if `myData.empty()` is true
+DS_ASSERT_FALSE(myData.empty());  //Returns DS::Error if `myData.empty()` is true
+
+//DS_ASSERT_TRUE(expression);
+//DS_ASSERT_FALSE(expression);
+//DS_ASSERT_NOT_EQ(expression, compareValue);
+//DS_ASSERT_EQ(expression, compareValue);
+//DS_ASSERT_GT(expression, compareValue);
+//DS_ASSERT_GT_EQ(expression, compareValue);
+//DS_ASSERT_LT(expression, compareValue);
+//DS_ASSERT_LT_EQ(expression, compareValue);
 ```
 
 ### Unwrapping to a variable (Or append backtrace and return error if failed)
@@ -84,8 +93,10 @@ DS::Result<void> MyVoidFunction()
     return {};
 }
 
-//Unwrapping a void function
-DS_UNWRAP_VOID(MyVoidFunction());
+{
+    //Unwrapping a void function
+    DS_UNWRAP_VOID(MyVoidFunction());
+}
 ```
 
 ### Get the error trace if a function failed

@@ -63,7 +63,7 @@ namespace DS
 {
     #define INTERNAL_DS_CONCAT(a, b) a ## b
     #define INTERNAL_DS_COMPOSE(a, b) a b
-    #define INTERNAL_DS_TEMP_NANE INTERNAL_DS_COMPOSE(INTERNAL_DS_CONCAT, (dsResult, __LINE__))
+    #define INTERNAL_DS_TEMP_NANE(name) INTERNAL_DS_COMPOSE(INTERNAL_DS_CONCAT, (name, __LINE__))
     
     struct TraceElement
     {
@@ -183,6 +183,21 @@ namespace DS
     #define DS_APPEND_TRACE(prev) \
         (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)), prev)
     
+    #define INTERNAL_DS_ASSERT(left, op, right) \
+        do \
+        { \
+            auto INTERNAL_DS_TEMP_NANE(autoLeft) = left; \
+            auto INTERNAL_DS_TEMP_NANE(autoRight) = right; \
+            if(!(INTERNAL_DS_TEMP_NANE(autoLeft) op INTERNAL_DS_TEMP_NANE(autoRight))) \
+            { \
+                return DS_ERROR_MSG(std::string("Expression \"") + DS_STR(left) + " " + #op + \
+                                    " " + DS_STR(right) + "\" has failed."); \
+            } \
+        } \
+        while(false)
+    
+    
+    //NOTE: Legacy, don't use
     #define DS_CHECKED_RETURN(resultVar) \
         do \
         { \
@@ -191,19 +206,22 @@ namespace DS
         } \
         while(false)
     
+    //NOTE: Legacy, don't use
     #define DS_UNWRAP_VOID_RETURN(op) \
         do \
         { \
-            auto INTERNAL_DS_TEMP_NANE = op; \
-            DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE); \
+            auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
+            DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE(dsResult)); \
         } \
         while(false)
     
+    //NOTE: Legacy, don't use
     #define DS_UNWRAP_RETURN(unwrapVar, op) \
-        auto INTERNAL_DS_TEMP_NANE = op; \
-        DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE); \
-        unwrapVar = INTERNAL_DS_TEMP_NANE.value()
-
+        auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
+        DS_CHECKED_RETURN(INTERNAL_DS_TEMP_NANE(dsResult)); \
+        unwrapVar = INTERNAL_DS_TEMP_NANE(dsResult).value()
+    
+    //NOTE: Legacy, don't use
     #define DS_ASSERT_RETURN(op) \
         do \
         { \
@@ -212,6 +230,8 @@ namespace DS
         } \
         while(false)
 
+    #define DS_CHECK(resultVar) DS_CHECKED_RETURN(resultVar)
+    
     #define DS_UNWRAP_VOID(op) DS_UNWRAP_VOID_RETURN(op)
     #define DS_UNWRAP_DECL(unwrapVar, op) DS_UNWRAP_RETURN(unwrapVar, op)
     #define DS_UNWRAP_ASSIGN(unwrapVar, op) \
@@ -220,8 +240,15 @@ namespace DS
             DS_UNWRAP_RETURN(unwrapVar, op); \
         } \
         while(false)
-    #define DS_CHECK(resultVar) DS_CHECKED_RETURN(resultVar)
-    #define DS_ASSERT(op) DS_ASSERT_RETURN(op)
+    
+    #define DS_ASSERT_TRUE(op) INTERNAL_DS_ASSERT(op, ==, true)
+    #define DS_ASSERT_FALSE(op) INTERNAL_DS_ASSERT(op, ==, false)
+    #define DS_ASSERT_EQ(op, val) INTERNAL_DS_ASSERT(op, ==, val)
+    #define DS_ASSERT_NOT_EQ(op, val) INTERNAL_DS_ASSERT(op, !=, val)
+    #define DS_ASSERT_GT(op, val) INTERNAL_DS_ASSERT(op, >, val)
+    #define DS_ASSERT_GT_EQ(op, val) INTERNAL_DS_ASSERT(op, >=, val)
+    #define DS_ASSERT_LT(op, val) INTERNAL_DS_ASSERT(op, <, val)
+    #define DS_ASSERT_LT_EQ(op, val) INTERNAL_DS_ASSERT(op, <=, val)
 }
 
 #endif
