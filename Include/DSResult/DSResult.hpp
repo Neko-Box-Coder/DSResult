@@ -190,8 +190,10 @@ namespace DS
             auto INTERNAL_DS_TEMP_NANE(autoRight) = right; \
             if(!(INTERNAL_DS_TEMP_NANE(autoLeft) op INTERNAL_DS_TEMP_NANE(autoRight))) \
             { \
-                return DS_ERROR_MSG(std::string("Expression \"") + DS_STR(left) + " " + #op + \
-                                    " " + DS_STR(right) + "\" has failed."); \
+                return DS_ERROR_MSG(std::string("Expression \"") + \
+                                    DS_STR(INTERNAL_DS_TEMP_NANE(autoLeft)) + \
+                                    " " + #op + " " + \
+                                    DS_STR(INTERNAL_DS_TEMP_NANE(autoRight)) + "\" has failed."); \
             } \
         } \
         while(false)
