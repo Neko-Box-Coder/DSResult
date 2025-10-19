@@ -68,6 +68,23 @@ DS::Result<void> AssertExample(int assertIndex)
         DS_ASSERT_TRUE(ReturnBool(true));
         DS_ASSERT_FALSE(ReturnBool(false));
         DS_ASSERT_EQ(ReturnInt(5), 5);
+
+        #if 0
+        //For testing string conversion
+        {
+            struct ABC
+            {
+                int a = 1;
+                //operator std::string() const { return ""; }
+                bool operator ==(const ABC& other) const { return a == other.a; }
+            };
+            
+            ABC a;
+            ABC b;
+            DS_ASSERT_EQ(a, b);
+        }
+        #endif
+        
         DS_ASSERT_NOT_EQ(ReturnInt(5), 4);
         DS_ASSERT_GT(ReturnInt(7), 6);
         DS_ASSERT_GT_EQ(ReturnInt(7), 6);

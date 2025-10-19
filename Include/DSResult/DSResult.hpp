@@ -42,6 +42,8 @@
 
 #include <string>
 #include <vector>
+#include <type_traits>
+#include <utility>
 
 namespace
 {
@@ -174,12 +176,80 @@ namespace DS
     };
 
     template<typename T>
+    struct InternalHasToString
+    {
+        template<typename U>
+        static decltype(std::to_string(std::declval<U>()), std::true_type()) Test(int);
+        
+        template<typename U>
+        static std::false_type Test(...);
+        
+        static constexpr bool Value = decltype(Test<T>(1))::value;
+    };
+
+    template<typename T>
+    struct InternalHasStringCtor
+    {
+        template<typename U>
+        static decltype(std::string(std::declval<U>()), std::true_type()) Test(int);
+        
+        template<typename U>
+        static std::false_type Test(...);
+        
+        static constexpr bool Value = decltype(Test<T>(1))::value;
+    };
+
+    template<typename T, typename std::enable_if<InternalHasToString<T>::Value, bool>::type = true>
+    std::string ToString(const T& value)
+    {
+        return std::to_string(value);
+    }
+
+    template<   typename T, 
+                typename std::enable_if<!InternalHasToString<T>::Value && 
+                                        InternalHasStringCtor<T>::Value, bool>::type = true>
+    std::string ToString(const T& value)
+    {
+        return std::string(value);
+    }
+    
+    template<   typename T, 
+                typename std::enable_if
+                <
+                    !InternalHasToString<T>::Value &&
+                    !InternalHasStringCtor<T>::Value &&
+                    std::is_convertible<T, std::string>::value, 
+                    bool
+                >::type = true>
+    std::string ToString(const T& value)
+    {
+        return (std::string)(value);
+    }
+
+    template<   typename T, 
+                typename std::enable_if
+                <
+                    !InternalHasToString<T>::Value && 
+                    !InternalHasStringCtor<T>::Value &&
+                    !std::is_convertible<T, std::string>::value, 
+                    bool
+                >::type = true>
+    std::string ToString(const T&)
+    {
+        static_assert(  std::false_type::value, 
+                        "--> DS Error: No valid conversion to string for this type. "
+                        "Either provide a string operator or "
+                        "consider using DS_ASSERT_TRUE() or DS_ASSERT_FALSE() instead");
+        return "";
+    }
+    
+    template<typename T>
     using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
     using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
 
     #define DS_ERROR_MSG(msg) \
         DS::Error(DS::ErrorTrace(msg, DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)))
-    #define DS_STR(nonStr) std::to_string(nonStr)
+    #define DS_STR(nonStr) DS::ToString(nonStr)
     #define DS_APPEND_TRACE(prev) \
         (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)), prev)
     
