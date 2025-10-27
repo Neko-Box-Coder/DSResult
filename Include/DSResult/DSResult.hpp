@@ -199,14 +199,23 @@ namespace DS
         static constexpr bool Value = decltype(Test<T>(1))::value;
     };
 
-    template<typename T, typename std::enable_if<InternalHasToString<T>::Value, bool>::type = true>
+    template<typename T, typename std::enable_if<std::is_pointer<T>::value, bool>::type = true>
+    std::string ToString(const T& value)
+    {
+        return std::to_string((unsigned long long)(void*)value);
+    }
+
+    template<   typename T, 
+                typename std::enable_if<!std::is_pointer<T>::value &&
+                                        InternalHasToString<T>::Value, bool>::type = true>
     std::string ToString(const T& value)
     {
         return std::to_string(value);
     }
 
     template<   typename T, 
-                typename std::enable_if<!InternalHasToString<T>::Value && 
+                typename std::enable_if<!std::is_pointer<T>::value &&
+                                        !InternalHasToString<T>::Value && 
                                         InternalHasStringCtor<T>::Value, bool>::type = true>
     std::string ToString(const T& value)
     {
@@ -216,11 +225,11 @@ namespace DS
     template<   typename T, 
                 typename std::enable_if
                 <
+                    !std::is_pointer<T>::value &&
                     !InternalHasToString<T>::Value &&
                     !InternalHasStringCtor<T>::Value &&
-                    std::is_convertible<T, std::string>::value, 
-                    bool
-                >::type = true>
+                    std::is_convertible<T, std::string>::value, bool>::type = true
+                >
     std::string ToString(const T& value)
     {
         return (std::string)(value);
@@ -229,11 +238,11 @@ namespace DS
     template<   typename T, 
                 typename std::enable_if
                 <
+                    !std::is_pointer<T>::value &&
                     !InternalHasToString<T>::Value && 
                     !InternalHasStringCtor<T>::Value &&
-                    !std::is_convertible<T, std::string>::value, 
-                    bool
-                >::type = true>
+                    !std::is_convertible<T, std::string>::value, bool>::type = true
+                >
     std::string ToString(const T&)
     {
         static_assert(  std::false_type::value, 
