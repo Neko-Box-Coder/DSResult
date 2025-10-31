@@ -311,7 +311,17 @@ namespace DS
         } \
         while(false)
 
+    #define DS_ERROR dsTempResultRef.error()
     #define DS_CHECK(resultVar) DS_CHECKED_RETURN(resultVar)
+    #define DS_CHECK_ACT(resultVar, failedAction) \
+        do \
+        { \
+            if(!resultVar.has_value()) \
+            { \
+                failedAction; \
+            } \
+        } \
+        while(false)
     
     #define DS_UNWRAP_VOID(op) DS_UNWRAP_VOID_RETURN(op)
     #define DS_UNWRAP_DECL(unwrapVar, op) DS_UNWRAP_RETURN(unwrapVar, op)
@@ -319,6 +329,39 @@ namespace DS
         do \
         { \
             DS_UNWRAP_RETURN(unwrapVar, op); \
+        } \
+        while(false)
+    
+    #define DS_UNWRAP_VOID_ACT(op, failedAction) \
+        do \
+        { \
+            auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
+            auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
+            if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
+            { \
+                failedAction; \
+            } \
+        } \
+        while(false)
+    #define DS_UNWRAP_DECL_ACT(unwrapVar, op, failedAction) \
+        auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
+        auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
+        if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
+        { \
+            failedAction; \
+        } \
+        unwrapVar = INTERNAL_DS_TEMP_NANE(dsResult).value()
+    
+    #define DS_UNWRAP_ASSIGN_ACT(unwrapVar, op, failedAction) \
+        do \
+        { \
+            auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
+            auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
+            if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
+            { \
+                failedAction; \
+            } \
+            unwrapVar = INTERNAL_DS_TEMP_NANE(dsResult).value(); \
         } \
         while(false)
     
