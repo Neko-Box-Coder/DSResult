@@ -121,9 +121,23 @@ namespace DS
     {
         std::string Message;
         std::vector<TraceElement> Stack;
+        int ErrorCode;
+
+        inline ErrorTrace() : Message(), Stack(), ErrorCode(0) {};
 
         //Constructor for new error
-        inline ErrorTrace(const std::string& msg, const TraceElement& element) : Message(msg)
+        inline ErrorTrace(const std::string& msg, const TraceElement& element) :    Message(msg),
+                                                                                    Stack(),
+                                                                                    ErrorCode(0)
+        {
+            Stack.emplace_back(element);
+        }
+
+        inline ErrorTrace(  const std::string& msg, 
+                            const TraceElement& element,
+                            int errorCode) :    Message(msg),
+                                                Stack(),
+                                                ErrorCode(errorCode)
         {
             Stack.emplace_back(element);
         }
@@ -134,6 +148,7 @@ namespace DS
             {
                 Message = std::move(other.Message);
                 Stack = std::move(other.Stack);
+                ErrorCode = other.ErrorCode;
             }
             return *this;
         }
@@ -147,6 +162,7 @@ namespace DS
         {
             Message = other.Message;
             Stack = other.Stack;
+            ErrorCode = other.ErrorCode;
             return *this;
         }
         
@@ -162,10 +178,13 @@ namespace DS
 
         inline operator std::string() const 
         {
-            std::string result = "Error:\n  " + Message + "\n\nStack trace:";
+            std::string result =
+                "Error:\n  " + Message + 
+                (ErrorCode == 0 ? "" : "\nError Code: " + std::to_string(ErrorCode)) +
+                "\n\nStack trace:";
+            
             for(const TraceElement& trace : Stack)
                 result += "\n  at " + trace.ToString();
-            
             return result;
         }
 
@@ -255,9 +274,30 @@ namespace DS
     template<typename T>
     using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
     using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+}
+
+namespace
+{
+    thread_local DS::ErrorTrace DSGlobalErrorTrace;
+}
+
+namespace DS
+{
+    template<typename T>
+    DS::Result<T> ProcessError(DS::ErrorTrace et) 
+    {
+        DSGlobalErrorTrace = et;
+        return DS::Error(et);
+    }
 
     #define DS_ERROR_MSG(msg) \
         DS::Error(DS::ErrorTrace(msg, DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)))
+    
+    #define DS_ERROR_MSG_EC(msg, errorCode) \
+        DS::Error(DS::ErrorTrace(   msg, \
+                                    DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__), \
+                                    errorCode))
+    
     #define DS_STR(nonStr) DS::ToString(nonStr)
     #define DS_APPEND_TRACE(prev) \
         (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)), prev)
@@ -277,6 +317,21 @@ namespace DS
         } \
         while(false)
     
+    #define INTERNAL_DS_ASSERT_EC(left, op, right, errorCode) \
+        do \
+        { \
+            auto INTERNAL_DS_TEMP_NANE(autoLeft) = left; \
+            auto INTERNAL_DS_TEMP_NANE(autoRight) = right; \
+            if(!(INTERNAL_DS_TEMP_NANE(autoLeft) op INTERNAL_DS_TEMP_NANE(autoRight))) \
+            { \
+                return DS_ERROR_MSG_EC( std::string("Expression \"") + \
+                                        DS_STR(INTERNAL_DS_TEMP_NANE(autoLeft)) + \
+                                        " " + #op + " " + \
+                                        DS_STR(INTERNAL_DS_TEMP_NANE(autoRight)) + "\" has failed.", \
+                                        errorCode); \
+            } \
+        } \
+        while(false)
     
     //NOTE: Legacy, don't use
     #define DS_CHECKED_RETURN(resultVar) \
@@ -311,14 +366,14 @@ namespace DS
         } \
         while(false)
 
-    #define DS_ERROR dsTempResultRef.error()
+    #define DS_TMP_ERROR dsTempResultRef.error()
     #define DS_CHECK(resultVar) DS_CHECKED_RETURN(resultVar)
-    #define DS_CHECK_ACT(resultVar, failedAction) \
+    #define DS_CHECK_ACT(resultVar, failedActions) \
         do \
         { \
             if(!resultVar.has_value()) \
             { \
-                failedAction; \
+                failedActions; \
             } \
         } \
         while(false)
@@ -332,38 +387,89 @@ namespace DS
         } \
         while(false)
     
-    #define DS_UNWRAP_VOID_ACT(op, failedAction) \
+    #define DS_UNWRAP_VOID_ACT(op, failedActions) \
         do \
         { \
             auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
             auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
             if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
             { \
-                failedAction; \
+                failedActions; \
             } \
         } \
         while(false)
-    #define DS_UNWRAP_DECL_ACT(unwrapVar, op, failedAction) \
+    
+    #define DS_UNWRAP_DECL_ACT(unwrapVar, op, failedActions) \
         auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
         auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
         if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
         { \
-            failedAction; \
+            failedActions; \
         } \
         unwrapVar = INTERNAL_DS_TEMP_NANE(dsResult).value()
     
-    #define DS_UNWRAP_ASSIGN_ACT(unwrapVar, op, failedAction) \
+    #define DS_UNWRAP_ASSIGN_ACT(unwrapVar, op, failedActions) \
         do \
         { \
             auto INTERNAL_DS_TEMP_NANE(dsResult) = op; \
             auto& dsTempResultRef = INTERNAL_DS_TEMP_NANE(dsResult); (void)dsTempResultRef; \
             if(!INTERNAL_DS_TEMP_NANE(dsResult).has_value()) \
             { \
-                failedAction; \
+                failedActions; \
             } \
             unwrapVar = INTERNAL_DS_TEMP_NANE(dsResult).value(); \
         } \
         while(false)
+    
+    #define DS_TRY(type) \
+        or_else(DS::ProcessError<type>).value_or(type()); \
+        do \
+        { \
+            if(!DSGlobalErrorTrace.Stack.empty()) \
+            { \
+                DS::Error returnErr = DS::Error(DSGlobalErrorTrace); \
+                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                return returnErr; \
+            } \
+        } while(false)
+    
+    #define DS_TRY_VOID() \
+        or_else(DS::ProcessError<void>); \
+        do \
+        { \
+            if(!DSGlobalErrorTrace.Stack.empty()) \
+            { \
+                DS::Error returnErr = DS::Error(DSGlobalErrorTrace); \
+                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                return returnErr; \
+            } \
+        } while(false)
+    
+    #define DS_TRY_ACT(type, failedActions) \
+        or_else(DS::ProcessError<type>).value_or(type()); \
+        do \
+        { \
+            if(!DSGlobalErrorTrace.Stack.empty()) \
+            { \
+                DS::Result<void> returnErr = DS::Error(DSGlobalErrorTrace); \
+                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
+                failedActions; \
+            } \
+        } while(false)
+    
+    #define DS_TRY_VOID_ACT(failedActions) \
+        or_else(DS::ProcessError<void>); \
+        do \
+        { \
+            if(!DSGlobalErrorTrace.Stack.empty()) \
+            { \
+                DS::Result<void> returnErr = DS::Error(DSGlobalErrorTrace); \
+                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
+                failedActions; \
+            } \
+        } while(false)
     
     #define DS_ASSERT_TRUE(op) INTERNAL_DS_ASSERT(op, ==, true)
     #define DS_ASSERT_FALSE(op) INTERNAL_DS_ASSERT(op, ==, false)
@@ -373,6 +479,17 @@ namespace DS
     #define DS_ASSERT_GT_EQ(op, val) INTERNAL_DS_ASSERT(op, >=, val)
     #define DS_ASSERT_LT(op, val) INTERNAL_DS_ASSERT(op, <, val)
     #define DS_ASSERT_LT_EQ(op, val) INTERNAL_DS_ASSERT(op, <=, val)
+    
+    #define DS_ASSERT_TRUE_EC(op, errorCode) INTERNAL_DS_ASSERT_EC(op, ==, true, errorCode)
+    #define DS_ASSERT_FALSE_EC(op, errorCode) INTERNAL_DS_ASSERT_EC(op, ==, false, errorCode)
+    #define DS_ASSERT_EQ_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, ==, val, errorCode)
+    #define DS_ASSERT_NOT_EQ_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, !=, val, errorCode)
+    #define DS_ASSERT_GT_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, >, val, errorCode)
+    #define DS_ASSERT_GT_EQ_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, >=, val, errorCode)
+    #define DS_ASSERT_LT_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, <, val, errorCode)
+    #define DS_ASSERT_LT_EQ_EC(op, val, errorCode) INTERNAL_DS_ASSERT_EC(op, <=, val, errorCode)
+    
+    
 }
 
 #endif
