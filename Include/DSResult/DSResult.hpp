@@ -40,6 +40,12 @@
     #define INTERNAL_DS_FUNC_CONSTEVAL
 #endif
 
+#if defined(DS_NO_PATH) && DS_NO_PATH
+    #define DS_PATH "(Private File)"
+#else
+    #define DS_PATH __FILE__
+#endif
+
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -291,16 +297,16 @@ namespace DS
     }
 
     #define DS_ERROR_MSG(msg) \
-        DS::Error(DS::ErrorTrace(msg, DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)))
+        DS::Error(DS::ErrorTrace(msg, DS::TraceElement(__func__, DSGetFileName(DS_PATH), __LINE__)))
     
     #define DS_ERROR_MSG_EC(msg, errorCode) \
         DS::Error(DS::ErrorTrace(   msg, \
-                                    DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__), \
+                                    DS::TraceElement(__func__, DSGetFileName(DS_PATH), __LINE__), \
                                     errorCode))
     
     #define DS_STR(nonStr) DS::ToString(nonStr)
     #define DS_APPEND_TRACE(prev) \
-        (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(__FILE__), __LINE__)), prev)
+        (prev.AppendTrace(DS::TraceElement(__func__, DSGetFileName(DS_PATH), __LINE__)), prev)
     
     #define INTERNAL_DS_ASSERT(left, op, right) \
         do \

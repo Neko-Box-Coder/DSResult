@@ -18,6 +18,8 @@ set_property(CACHE DS_EXPECTED_BACKEND PROPERTY STRINGS "TL"
                                                         "STD"
                                                         "CUSTOM")
 
+option(DS_NO_PATH "Don't show file path for error trace" off)
+
 add_library(DSResult INTERFACE)
 target_include_directories(DSResult INTERFACE "${CMAKE_CURRENT_LIST_DIR}/Include")
 
@@ -35,6 +37,12 @@ elseif(${DS_EXPECTED_BACKEND} STREQUAL "CUSTOM")
     target_compile_definitions(DSResult INTERFACE DS_USE_CUSTOM_EXPECTED=1)
 else()
     message(FATAL_ERROR "Invalid DS_EXPECTED_BACKEND option: ${DS_EXPECTED_BACKEND}")
+endif()
+
+if(${DS_NO_PATH})
+    target_compile_definitions(DSResult INTERFACE DS_NO_PATH=1)
+else()
+    target_compile_definitions(DSResult INTERFACE DS_NO_PATH=0)
 endif()
 
 if(${DS_BUILD_EXAMPLES})
