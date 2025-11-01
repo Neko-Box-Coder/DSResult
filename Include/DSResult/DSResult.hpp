@@ -150,12 +150,9 @@ namespace DS
 
         inline ErrorTrace& operator=(const ErrorTrace& other)
         {
-            if(this != &other)
-            {
-                Message = std::move(other.Message);
-                Stack = std::move(other.Stack);
-                ErrorCode = other.ErrorCode;
-            }
+            Message = other.Message;
+            Stack = other.Stack;
+            ErrorCode = other.ErrorCode;
             return *this;
         }
 
@@ -166,9 +163,12 @@ namespace DS
         
         inline ErrorTrace& operator=(ErrorTrace&& other)
         {
-            Message = other.Message;
-            Stack = other.Stack;
-            ErrorCode = other.ErrorCode;
+            if(this != &other)
+            {
+                Message = std::move(other.Message);
+                Stack = std::move(other.Stack);
+                ErrorCode = other.ErrorCode;
+            }
             return *this;
         }
         
