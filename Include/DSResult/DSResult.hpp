@@ -344,7 +344,7 @@ namespace DS
         do \
         { \
             if(!resultVar.has_value()) \
-                return DS::Error(DS_APPEND_TRACE(resultVar.error())); \
+                return DS::Error(std::move(DS_APPEND_TRACE(resultVar.error()))); \
         } \
         while(false)
     
@@ -433,7 +433,7 @@ namespace DS
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Error returnErr = DS::Error(DSGlobalErrorTrace); \
+                DS::Error returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
                 DSGlobalErrorTrace = DS::ErrorTrace(); \
                 return returnErr; \
             } \
@@ -445,7 +445,7 @@ namespace DS
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Error returnErr = DS::Error(DSGlobalErrorTrace); \
+                DS::Error returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
                 DSGlobalErrorTrace = DS::ErrorTrace(); \
                 return returnErr; \
             } \
@@ -457,7 +457,7 @@ namespace DS
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Result<void> returnErr = DS::Error(DSGlobalErrorTrace); \
+                DS::Result<void> returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
                 DSGlobalErrorTrace = DS::ErrorTrace(); \
                 DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
                 failedActions; \
@@ -470,7 +470,7 @@ namespace DS
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Result<void> returnErr = DS::Error(DSGlobalErrorTrace); \
+                DS::Result<void> returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
                 DSGlobalErrorTrace = DS::ErrorTrace(); \
                 DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
                 failedActions; \
