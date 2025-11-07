@@ -70,13 +70,19 @@ namespace DS
         std::vector<TraceElement> Stack;
         int ErrorCode;
         ...
-        inline operator std::string() const;
-        inline std::string ToString() const;
+        operator std::string() const;
+        std::string ToString() const;
     };
     
-    template<typename T>
-    using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
-    using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+    struct Result : public expected<T, DS::ErrorTrace>
+    {
+        inline T DefaultOr();                       //Alias for `value_or(T())`
+        inline bool HasValue();                     //Alias for `has_value()`
+        inline const T& Value();                    //Alias for `value()`
+        inline const DS::ErrorTrace& Error();       //Alias for `error()`
+        ...
+    }
+    struct Error : public unexpected<DS::ErrorTrace>;
 }
 ```
 
@@ -154,8 +160,8 @@ string.
 ```
 
 ### Try To Assign Result Value From A Function
-- `DS_TRY(type)`: will return the error if failed
-- `DS_TRY_ACT(type, failedActions)`: will execute `failedActions` if failed. 
+- `DS_TRY()`: will return the error if failed
+- `DS_TRY_ACT(failedActions)`: will execute `failedActions` if failed. 
 `DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro.
 
 **Do not omit curly braces when using this macro**
@@ -166,50 +172,30 @@ DS::Result<int> MyFunction();
 DS::Result<int> MyFunction2()
 {
     //Will not continue if `MyFunction()` failed
-    int myInt = MyFunction().DS_TRY(int);
+    int myInt = MyFunction().DS_TRY();
     ...
     return 0;
 }
 
 bool MyFunction2()
 {
-    int myInt = MyFunction().DS_TRY_ACT(int, 
-                                        //Failed actions:
+    int myInt = MyFunction().DS_TRY_ACT(//Failed actions:
                                         std::cout << DS_TMP_ERROR.ToString() << std::endl; 
                                         return false);
     ...
     int myErrorCode = 0;
-    myInt = MyFunction().DS_TRY_ACT(int, 
-                                    //Or accessing the error code:
+    myInt = MyFunction().DS_TRY_ACT(//Or accessing the error code:
                                     myErrorCode = DS_TMP_ERROR.ErrorCode);
     ...
-    return true;
-}
-```
-
-### Check Result From A Void Function 
-- `DS_TRY_VOID()`: will return the error trace if failed
-- `DS_TRY_VOID_ACT(failedActions)`: will execute `failedActions` if failed. 
-`DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro.
-
-**Do not omit curly braces when using this macro**
-
-```cpp
-DS::Result<void> MyFunction();
-
-DS::Result<void> MyFunction2()
-{
-    //Will not continue if `MyFunction()` failed
-    MyFunction().DS_TRY_VOID();
-    ...
-    return {};
-}
-
-bool MyFunction2()
-{
-    MyFunction().DS_TRY_VOID_ACT(   //Failed actions:
-                                    std::cout << DS_TMP_ERROR.ToString() << std::endl; 
-                                    return false);
+    //Do this
+    if(...)
+    {
+        myInt = MyFunction().DS_TRY_ACT(return false);
+    }
+    
+    //DON'T DO THIS. The `DS_TRY_ACT` macro evaluates to more than 1 statement
+    //if(...)
+    //    myInt = MyFunction().DS_TRY_ACT(return false);
     ...
     return true;
 }

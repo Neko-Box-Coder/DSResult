@@ -278,8 +278,110 @@ namespace DS
     }
     
     template<typename T>
-    using Result = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
-    using Error = DS_UNEXPECTED_TYPE<DS::ErrorTrace>;
+    struct Result : public DS_EXPECTED_TYPE<T, DS::ErrorTrace> 
+    {
+        inline Result(const T& val) : DS_EXPECTED_TYPE<T, DS::ErrorTrace>(val) {}
+        inline Result(const DS_EXPECTED_TYPE<T, DS::ErrorTrace>& ex) : 
+            DS_EXPECTED_TYPE<T, DS::ErrorTrace>(ex) {}
+        
+        inline ~Result() {};
+        
+        using Base = DS_EXPECTED_TYPE<T, DS::ErrorTrace>;
+        
+        template<class F>
+        inline const Result<T>& CallIfFailed(F&& f) const &
+        {
+            if(!DS_EXPECTED_TYPE<T, DS::ErrorTrace>::has_value())
+                f(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error());
+            return *this;
+        }
+        
+        inline T DefaultOr() const&
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value_or(T());
+        }
+        
+        inline T DefaultOr() const &&
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value_or(T());
+        }
+        
+        inline bool HasValue() const
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::has_value();
+        }
+        
+        inline const T& Value() const&
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value();
+        }
+        
+        inline T&& Value() const &&
+        {
+            return std::move(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value());
+        }
+        
+        inline const DS::ErrorTrace& Error() const&
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error();
+        }
+        
+        inline const DS::ErrorTrace&& Error() const &&
+        {
+            return std::move(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error());
+        }
+    };
+    
+    template<>
+    struct Result<void> : public DS_EXPECTED_TYPE<void, DS::ErrorTrace> 
+    {
+        inline Result() : DS_EXPECTED_TYPE<void, DS::ErrorTrace>() {}
+        inline Result(const DS_EXPECTED_TYPE<void, DS::ErrorTrace>& ex) : 
+            DS_EXPECTED_TYPE<void, DS::ErrorTrace>(ex) {}
+        
+        inline ~Result() {};
+        
+        using Base = DS_EXPECTED_TYPE<void, DS::ErrorTrace>;
+        
+        template<class F>
+        inline const Result<void>& CallIfFailed(F&& f) const &
+        {
+            if(!DS_EXPECTED_TYPE<void, DS::ErrorTrace>::has_value())
+                f(DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error());
+            return *this;
+        }
+        
+        inline void DefaultOr() const&      { return; }
+        inline void DefaultOr() const &&    { return; }
+        inline bool HasValue() const
+        {
+            return DS_EXPECTED_TYPE<void, DS::ErrorTrace>::has_value();
+        }
+        inline void Value() const&      { return; }
+        inline void Value() const &&    { return; }
+        
+        inline const DS::ErrorTrace& Error() const&
+        {
+            return DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error();
+        }
+        
+        inline const DS::ErrorTrace&& Error() const &&
+        {
+            return std::move(DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error());
+        }
+    };
+    
+    struct Error : public DS_UNEXPECTED_TYPE<DS::ErrorTrace>
+    {
+        Error(const DS::ErrorTrace& et) : DS_UNEXPECTED_TYPE<DS::ErrorTrace>(et) {}
+        Error(const Error& other) : DS_UNEXPECTED_TYPE<DS::ErrorTrace>(other) {}
+        
+        template< typename T >
+        operator Result<T>() const
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>(DS_UNEXPECTED_TYPE<DS::ErrorTrace>(*this));
+        }
+    };
 }
 
 namespace
@@ -289,11 +391,10 @@ namespace
 
 namespace DS
 {
-    template<typename T>
-    DS::Result<T> ProcessError(DS::ErrorTrace et) 
+    inline void ProcessError(DS::ErrorTrace et) 
     {
         DSGlobalErrorTrace = et;
-        return DS::Error(et);
+        return;
     }
 
     #define DS_ERROR_MSG(msg) \
@@ -427,8 +528,8 @@ namespace DS
         } \
         while(false)
     
-    #define DS_TRY(type) \
-        or_else(DS::ProcessError<type>).value_or(type()); \
+    #define DS_TRY() \
+        CallIfFailed(DS::ProcessError).DefaultOr(); \
         do \
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
@@ -438,21 +539,9 @@ namespace DS
                 return returnErr; \
             } \
         } while(false)
-    
-    #define DS_TRY_VOID() \
-        or_else(DS::ProcessError<void>); \
-        do \
-        { \
-            if(!DSGlobalErrorTrace.Stack.empty()) \
-            { \
-                DS::Error returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
-                DSGlobalErrorTrace = DS::ErrorTrace(); \
-                return returnErr; \
-            } \
-        } while(false)
-    
-    #define DS_TRY_ACT(type, failedActions) \
-        or_else(DS::ProcessError<type>).value_or(type()); \
+
+    #define DS_TRY_ACT(failedActions) \
+        CallIfFailed(DS::ProcessError).DefaultOr(); \
         do \
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
@@ -463,20 +552,7 @@ namespace DS
                 failedActions; \
             } \
         } while(false)
-    
-    #define DS_TRY_VOID_ACT(failedActions) \
-        or_else(DS::ProcessError<void>); \
-        do \
-        { \
-            if(!DSGlobalErrorTrace.Stack.empty()) \
-            { \
-                DS::Result<void> returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
-                DSGlobalErrorTrace = DS::ErrorTrace(); \
-                DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
-                failedActions; \
-            } \
-        } while(false)
-    
+
     #define DS_ASSERT_TRUE(op) INTERNAL_DS_ASSERT(op, ==, true)
     #define DS_ASSERT_FALSE(op) INTERNAL_DS_ASSERT(op, ==, false)
     #define DS_ASSERT_EQ(op, val) INTERNAL_DS_ASSERT(op, ==, val)
