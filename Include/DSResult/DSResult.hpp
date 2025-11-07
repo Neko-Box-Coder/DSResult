@@ -403,7 +403,7 @@ namespace DS
     #define DS_ERROR_MSG_EC(msg, errorCode) \
         DS::Error(DS::ErrorTrace(   msg, \
                                     DS::TraceElement(__func__, DSGetFileName(DS_PATH), __LINE__), \
-                                    errorCode))
+                                    (int)errorCode))
     
     #define DS_STR(nonStr) DS::ToString(nonStr)
     #define DS_APPEND_TRACE(prev) \
