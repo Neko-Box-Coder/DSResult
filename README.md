@@ -159,9 +159,41 @@ string.
 }
 ```
 
+### Getting Result Value And Act On Failure
+
+There are 2 part when trying to get a value from a ds result object. First is getting the value 
+itself and the second part is what to do when there's a failure.
+
+- `DS_VALUE_OR()`: returns the result value or register error if any and return default value. 
+It is used as a chained function call.
+- `DS_CHECK_PREV()`: Checks any previous error registered with `DS_VALUE_OR()` and return the first 
+error as a result for the current function. Otherwise continues execution. This also clears any 
+registered error.
+- `DS_CHECK_PREV_ACT(failedActions)`: Same as `DS_CHECK_PREV()` except performs the failed action(s)
+instead of returning the error. `DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro inside the
+`failedActions`.
+
+```cpp
+DS::Result<int> MyFunction();
+
+DS::Result<int> MyFunction2()
+{
+    int myInt = MyFunction().DS_VALUE_OR();
+    myInt = MyFunction().DS_VALUE_OR();
+    DS_CHECK_PREV();    //Will not continue if any of the previous `MyFunction()` calls failed.
+                        //Returns the first error.
+    ...
+    return 0;
+}
+
+```
+
+
 ### Try To Assign Result Value From A Function
-- `DS_TRY()`: will return the error if failed
-- `DS_TRY_ACT(failedActions)`: will execute `failedActions` if failed. 
+- `DS_TRY()`: will return the error if failed. Same as `DS_VALUE_OR(); DS_CHECK_PREV()`
+- `DS_TRY_ACT(failedActions)`: will execute `failedActions` if failed. Same as `DS_VALUE_OR(); 
+DS_CHECK_PREV_ACT(failedActions)`
+
 `DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro.
 
 **Do not omit curly braces when using this macro**

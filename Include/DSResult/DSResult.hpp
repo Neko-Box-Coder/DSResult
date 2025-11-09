@@ -393,7 +393,8 @@ namespace DS
 {
     inline void ProcessError(DS::ErrorTrace et) 
     {
-        DSGlobalErrorTrace = et;
+        if(DSGlobalErrorTrace.Stack.empty())
+            DSGlobalErrorTrace = et;
         return;
     }
 
@@ -528,8 +529,9 @@ namespace DS
         } \
         while(false)
     
-    #define DS_TRY() \
-        CallIfFailed(DS::ProcessError).DefaultOr(); \
+    #define DS_VALUE_OR() CallIfFailed(DS::ProcessError).DefaultOr()
+    
+    #define DS_CHECK_PREV() \
         do \
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
@@ -540,8 +542,7 @@ namespace DS
             } \
         } while(false)
 
-    #define DS_TRY_ACT(failedActions) \
-        CallIfFailed(DS::ProcessError).DefaultOr(); \
+    #define DS_CHECK_PREV_ACT(failedActions) \
         do \
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
@@ -552,6 +553,10 @@ namespace DS
                 failedActions; \
             } \
         } while(false)
+
+    #define DS_TRY() DS_VALUE_OR(); DS_CHECK_PREV()
+
+    #define DS_TRY_ACT(failedActions) DS_VALUE_OR(); DS_CHECK_PREV_ACT(failedActions)
 
     #define DS_ASSERT_TRUE(op) INTERNAL_DS_ASSERT(op, ==, true)
     #define DS_ASSERT_FALSE(op) INTERNAL_DS_ASSERT(op, ==, false)
