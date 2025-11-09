@@ -280,8 +280,19 @@ namespace DS
     template<typename T>
     struct Result : public DS_EXPECTED_TYPE<T, DS::ErrorTrace> 
     {
+        inline Result() : DS_EXPECTED_TYPE<T, DS::ErrorTrace>() {}
         inline Result(const T& val) : DS_EXPECTED_TYPE<T, DS::ErrorTrace>(val) {}
+        
+        template<   typename Y, 
+                    typename std::enable_if<std::is_convertible<Y, T>::value, bool>::type = true>
+        inline Result(const Y& val) : DS_EXPECTED_TYPE<T, DS::ErrorTrace>(val) {}
+        
         inline Result(const DS_EXPECTED_TYPE<T, DS::ErrorTrace>& ex) : 
+            DS_EXPECTED_TYPE<T, DS::ErrorTrace>(ex) {}
+        
+        template<   typename Y, 
+                    typename std::enable_if<std::is_convertible<Y, T>::value, bool>::type = true>
+        inline Result(const DS_EXPECTED_TYPE<Y, DS::ErrorTrace>& ex) : 
             DS_EXPECTED_TYPE<T, DS::ErrorTrace>(ex) {}
         
         inline ~Result() {};
