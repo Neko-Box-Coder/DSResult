@@ -547,9 +547,9 @@ namespace DS
         { \
             if(!DSGlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Error returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
+                DS::ErrorTrace returnErrorTrace = std::move(DSGlobalErrorTrace); \
                 DSGlobalErrorTrace = DS::ErrorTrace(); \
-                return returnErr; \
+                return DS::Error(std::move(DS_APPEND_TRACE(returnErrorTrace))); \
             } \
         } while(false)
 
