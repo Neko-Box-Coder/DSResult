@@ -322,19 +322,39 @@ namespace DS
             return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::has_value();
         }
         
+        inline T& Value() &
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value();
+        }
+        
         inline const T& Value() const&
         {
             return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value();
         }
         
-        inline T&& Value() const &&
+        inline T&& Value() &&
         {
             return std::move(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value());
+        }
+        
+        inline const T&& Value() const &&
+        {
+            return std::move(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::value());
+        }
+        
+        inline DS::ErrorTrace& Error() &
+        {
+            return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error();
         }
         
         inline const DS::ErrorTrace& Error() const&
         {
             return DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error();
+        }
+        
+        inline DS::ErrorTrace&& Error() &&
+        {
+            return std::move(DS_EXPECTED_TYPE<T, DS::ErrorTrace>::error());
         }
         
         inline const DS::ErrorTrace&& Error() const &&
@@ -371,9 +391,19 @@ namespace DS
         inline void Value() const&      { return; }
         inline void Value() const &&    { return; }
         
+        inline DS::ErrorTrace& Error() &
+        {
+            return DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error();
+        }
+        
         inline const DS::ErrorTrace& Error() const&
         {
             return DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error();
+        }
+        
+        inline DS::ErrorTrace&& Error() &&
+        {
+            return std::move(DS_EXPECTED_TYPE<void, DS::ErrorTrace>::error());
         }
         
         inline const DS::ErrorTrace&& Error() const &&
