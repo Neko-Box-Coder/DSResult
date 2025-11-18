@@ -425,17 +425,13 @@ namespace DS
     };
 }
 
-namespace
-{
-    thread_local DS::ErrorTrace DSGlobalErrorTrace;
-}
-
 namespace DS
 {
+    inline thread_local DS::ErrorTrace GlobalErrorTrace;
     inline void ProcessError(DS::ErrorTrace et) 
     {
-        if(DSGlobalErrorTrace.Stack.empty())
-            DSGlobalErrorTrace = et;
+        if(GlobalErrorTrace.Stack.empty())
+            GlobalErrorTrace = et;
         return;
     }
 
@@ -575,10 +571,10 @@ namespace DS
     #define DS_CHECK_PREV() \
         do \
         { \
-            if(!DSGlobalErrorTrace.Stack.empty()) \
+            if(!DS::GlobalErrorTrace.Stack.empty()) \
             { \
-                DS::ErrorTrace returnErrorTrace = std::move(DSGlobalErrorTrace); \
-                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                DS::ErrorTrace returnErrorTrace = std::move(DS::GlobalErrorTrace); \
+                DS::GlobalErrorTrace = DS::ErrorTrace(); \
                 return DS::Error(std::move(DS_APPEND_TRACE(returnErrorTrace))); \
             } \
         } while(false)
@@ -586,10 +582,10 @@ namespace DS
     #define DS_CHECK_PREV_ACT(failedActions) \
         do \
         { \
-            if(!DSGlobalErrorTrace.Stack.empty()) \
+            if(!DS::GlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Result<void> returnErr = DS::Error(std::move(DSGlobalErrorTrace)); \
-                DSGlobalErrorTrace = DS::ErrorTrace(); \
+                DS::Result<void> returnErr = DS::Error(std::move(DS::GlobalErrorTrace)); \
+                DS::GlobalErrorTrace = DS::ErrorTrace(); \
                 DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
                 failedActions; \
             } \

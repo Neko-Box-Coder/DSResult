@@ -195,6 +195,7 @@ Error:
 
 Stack trace:
   at ExampleCommon.cpp:10 in FunctionWithMsg()
+  at ExampleCommon.cpp:43 in FunctionWithTry()
   at ExampleCommon.cpp:150 in main()
 ---------
 Error:
