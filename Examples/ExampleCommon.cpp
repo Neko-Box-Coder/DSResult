@@ -1,3 +1,4 @@
+#include "TryExamples.hpp"
 #include "DSResult/DSResult.hpp"
 
 #include <iostream>
@@ -36,18 +37,6 @@ DS::Result<void> FunctionWithUnwrapVoid()
 {
     DS_UNWRAP_VOID(FunctionWithUnwrapAssign());
     return {};
-}
-
-DS::Result<int> FunctionWithTry()
-{
-    int resultInt = FunctionWithMsg().DS_TRY();
-    return resultInt;
-}
-
-bool FunctionWithTryAct()
-{
-    int resultInt = FunctionWithMsg().DS_TRY_ACT(return false);
-    return true;
 }
 
 bool ReturnBool(bool returnVal)
@@ -141,121 +130,148 @@ int main()
     #define APPEND_ERROR() \
         resultString += DS_APPEND_TRACE(DS_TMP_ERROR).ToString() + "\n---------\n";
     
-    int intResult = FunctionWithAssert(2).DS_TRY_ACT(APPEND_ERROR());
+    resultString += "1:\n";
+    int intResult = FunctionWithAssert(2).DS_TRY_ACT(APPEND_ERROR());   //Pass
     (void)intResult;
-    intResult = FunctionWithAssert(0).DS_TRY_ACT(APPEND_ERROR());
-    FunctionWithUnwrapDecl().DS_TRY_ACT(APPEND_ERROR());
-    FunctionWithUnwrapAssign().DS_TRY_ACT(APPEND_ERROR());
-    FunctionWithUnwrapVoid().DS_TRY_ACT(APPEND_ERROR());
-    FunctionWithTry().DS_TRY_ACT(APPEND_ERROR());
-    FunctionWithTryAct();
-    
+    resultString += "2:\n";
+    intResult = FunctionWithAssert(0).DS_TRY_ACT(APPEND_ERROR());       //Fail
+    resultString += "3:\n";
+    FunctionWithUnwrapDecl().DS_TRY_ACT(APPEND_ERROR());                //Fail
+    resultString += "4:\n";
+    FunctionWithUnwrapAssign().DS_TRY_ACT(APPEND_ERROR());              //Fail
+    resultString += "5:\n";
+    FunctionWithUnwrapVoid().DS_TRY_ACT(APPEND_ERROR());                //Fail
+    resultString += "6:\n";
+    FunctionWithTry().DS_TRY_ACT(APPEND_ERROR());                       //Fail
+    resultString += "7:\n";
+    resultString += std::to_string(FunctionWithTryAct()) + "\n";        //Fail with "0"
+    resultString += "8:\n";
     for(int i = 0; i < 9; ++i)
     {
-        AssertExample(i).DS_TRY_ACT(APPEND_ERROR());
+        resultString += "i == " + std::to_string(i) + ":\n";
+        AssertExample(i).DS_TRY_ACT(APPEND_ERROR());                    //Pass first, fail rest
     }
     
     std::cout << resultString << std::endl;
     
-    std::string expectedResultString = R"(Error:
+    std::string expectedResultString = R"(1:
+2:
+Error:
   Expression "0 != 0" has failed.
 Error Code: 5
 
 Stack trace:
-  at ExampleCommon.cpp:16 in FunctionWithAssert()
-  at ExampleCommon.cpp:146 in main()
+  at ExampleCommon.cpp:17 in FunctionWithAssert()
+  at ExampleCommon.cpp:137 in main()
 ---------
+3:
 Error:
   Something wrong: 12345
 
 Stack trace:
-  at ExampleCommon.cpp:10 in FunctionWithMsg()
-  at ExampleCommon.cpp:22 in FunctionWithUnwrapDecl()
-  at ExampleCommon.cpp:147 in main()
+  at ExampleCommon.cpp:11 in FunctionWithMsg()
+  at ExampleCommon.cpp:23 in FunctionWithUnwrapDecl()
+  at ExampleCommon.cpp:139 in main()
 ---------
+4:
 Error:
   Something wrong: 12345
 
 Stack trace:
-  at ExampleCommon.cpp:10 in FunctionWithMsg()
-  at ExampleCommon.cpp:30 in FunctionWithUnwrapAssign()
-  at ExampleCommon.cpp:148 in main()
+  at ExampleCommon.cpp:11 in FunctionWithMsg()
+  at ExampleCommon.cpp:31 in FunctionWithUnwrapAssign()
+  at ExampleCommon.cpp:141 in main()
 ---------
+5:
 Error:
   Something wrong: 12345
 
 Stack trace:
-  at ExampleCommon.cpp:10 in FunctionWithMsg()
-  at ExampleCommon.cpp:30 in FunctionWithUnwrapAssign()
-  at ExampleCommon.cpp:37 in FunctionWithUnwrapVoid()
-  at ExampleCommon.cpp:149 in main()
+  at ExampleCommon.cpp:11 in FunctionWithMsg()
+  at ExampleCommon.cpp:31 in FunctionWithUnwrapAssign()
+  at ExampleCommon.cpp:38 in FunctionWithUnwrapVoid()
+  at ExampleCommon.cpp:143 in main()
 ---------
+6:
 Error:
   Something wrong: 12345
 
 Stack trace:
-  at ExampleCommon.cpp:10 in FunctionWithMsg()
-  at ExampleCommon.cpp:43 in FunctionWithTry()
-  at ExampleCommon.cpp:150 in main()
+  at TryExamples.cpp:8 in FunctionWithMsg()
+  at TryExamples.cpp:14 in FunctionWithTry()
+  at ExampleCommon.cpp:145 in main()
 ---------
+7:
+0
+8:
+i == 0:
+i == 1:
 Error:
   Expression "0 == 1" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:106 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:95 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 2:
 Error:
   Expression "1 == 0" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:109 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:98 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 3:
 Error:
   Expression "5 == 4" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:112 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:101 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 4:
 Error:
   Expression "5 != 5" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:115 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:104 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 5:
 Error:
   Expression "5 > 6" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:118 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:107 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 6:
 Error:
   Expression "5 >= 6" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:121 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:110 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 7:
 Error:
   Expression "5 < 4" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:124 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:113 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
+i == 8:
 Error:
   Expression "5 <= 4" has failed.
 
 Stack trace:
-  at ExampleCommon.cpp:127 in AssertExample()
-  at ExampleCommon.cpp:155 in main()
+  at ExampleCommon.cpp:116 in AssertExample()
+  at ExampleCommon.cpp:152 in main()
 ---------
 )";
 
+    
     if(resultString != expectedResultString)
     {
         std::cout << "\n\nFailed. Expected:" << std::endl;

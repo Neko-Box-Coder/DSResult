@@ -54,19 +54,26 @@ if(${DS_BUILD_EXAMPLES})
     
     target_compile_options(DSResult INTERFACE "${DS_EXAMPLE_COMPILE_FLAGS}")
     
-    add_executable(TlExpectedExample "${CMAKE_CURRENT_LIST_DIR}/Examples/TlExpectedExample.cpp")
+    add_executable(TlExpectedExample    "${CMAKE_CURRENT_LIST_DIR}/Examples/TlExpectedExample.cpp"
+                                        "${CMAKE_CURRENT_LIST_DIR}/Examples/TryExamples.cpp")
     set_property(TARGET TlExpectedExample PROPERTY CXX_STANDARD 11)
     target_include_directories( TlExpectedExample PRIVATE 
                                 "${CMAKE_CURRENT_LIST_DIR}/External/expected/include"
                                 "${CMAKE_CURRENT_LIST_DIR}/Include")
+    target_compile_definitions(TlExpectedExample PRIVATE DS_USE_TL_EXPECTED=1)
     
-    add_executable(ExpectedLiteExample "${CMAKE_CURRENT_LIST_DIR}/Examples/ExpectedLiteExample.cpp")
+    
+    add_executable(ExpectedLiteExample  "${CMAKE_CURRENT_LIST_DIR}/Examples/ExpectedLiteExample.cpp"
+                                        "${CMAKE_CURRENT_LIST_DIR}/Examples/TryExamples.cpp")
     set_property(TARGET ExpectedLiteExample PROPERTY CXX_STANDARD 11)
-    target_include_directories( ExpectedLiteExample PRIVATE 
+    target_include_directories( ExpectedLiteExample PUBLIC 
                                 "${CMAKE_CURRENT_LIST_DIR}/External/expected-lite/include"
                                 "${CMAKE_CURRENT_LIST_DIR}/Include")
+    target_compile_definitions(ExpectedLiteExample PUBLIC DS_USE_EXPECTED_LITE=1)
     
-    add_executable(StdExpectedExample "${CMAKE_CURRENT_LIST_DIR}/Examples/StdExpectedExample.cpp")
+    add_executable(StdExpectedExample   "${CMAKE_CURRENT_LIST_DIR}/Examples/StdExpectedExample.cpp"
+                                        "${CMAKE_CURRENT_LIST_DIR}/Examples/TryExamples.cpp")
     set_property(TARGET StdExpectedExample PROPERTY CXX_STANDARD 23)
     target_include_directories(StdExpectedExample PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Include")
+    target_compile_definitions(StdExpectedExample PRIVATE DS_USE_STD_EXPECTED=1)
 endif()
