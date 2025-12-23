@@ -427,11 +427,24 @@ namespace DS
 
 namespace DS
 {
-    inline thread_local DS::ErrorTrace GlobalErrorTrace;
+    namespace
+    {
+        //Effectively an inline variable
+        template<class T>
+        struct Inliner
+        {
+            static thread_local DS::ErrorTrace GlobalErrorTrace;
+        };
+        using InlinerV = Inliner<void>;
+        
+        template<>
+        thread_local DS::ErrorTrace InlinerV::GlobalErrorTrace = {};
+    }
+
     inline void ProcessError(DS::ErrorTrace et) 
     {
-        if(GlobalErrorTrace.Stack.empty())
-            GlobalErrorTrace = et;
+        if(InlinerV::GlobalErrorTrace.Stack.empty())
+            InlinerV::GlobalErrorTrace = et;
         return;
     }
 
@@ -571,10 +584,10 @@ namespace DS
     #define DS_CHECK_PREV() \
         do \
         { \
-            if(!DS::GlobalErrorTrace.Stack.empty()) \
+            if(!DS::InlinerV::GlobalErrorTrace.Stack.empty()) \
             { \
-                DS::ErrorTrace returnErrorTrace = std::move(DS::GlobalErrorTrace); \
-                DS::GlobalErrorTrace = DS::ErrorTrace(); \
+                DS::ErrorTrace returnErrorTrace = std::move(DS::InlinerV::GlobalErrorTrace); \
+                DS::InlinerV::GlobalErrorTrace = DS::ErrorTrace(); \
                 return DS::Error(std::move(DS_APPEND_TRACE(returnErrorTrace))); \
             } \
         } while(false)
@@ -582,10 +595,10 @@ namespace DS
     #define DS_CHECK_PREV_ACT(failedActions) \
         do \
         { \
-            if(!DS::GlobalErrorTrace.Stack.empty()) \
+            if(!DS::InlinerV::GlobalErrorTrace.Stack.empty()) \
             { \
-                DS::Result<void> returnErr = DS::Error(std::move(DS::GlobalErrorTrace)); \
-                DS::GlobalErrorTrace = DS::ErrorTrace(); \
+                DS::Result<void> returnErr = DS::Error(std::move(DS::InlinerV::GlobalErrorTrace)); \
+                DS::InlinerV::GlobalErrorTrace = DS::ErrorTrace(); \
                 DS::Result<void>& dsTempResultRef = returnErr; (void)dsTempResultRef; \
                 failedActions; \
             } \
