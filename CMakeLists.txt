@@ -56,15 +56,15 @@ if(${DS_BUILD_EXAMPLES})
     
     add_executable(TlExpectedExample "${CMAKE_CURRENT_LIST_DIR}/Examples/TlExpectedExample.cpp")
     set_property(TARGET TlExpectedExample PROPERTY CXX_STANDARD 11)
-    target_include_directories( TlExpectedExample 
-                                SYSTEM PRIVATE "${CMAKE_CURRENT_LIST_DIR}/External/expected/include"
-                                PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Include")
+    target_include_directories( TlExpectedExample PRIVATE 
+                                "${CMAKE_CURRENT_LIST_DIR}/External/expected/include"
+                                "${CMAKE_CURRENT_LIST_DIR}/Include")
     
     add_executable(ExpectedLiteExample "${CMAKE_CURRENT_LIST_DIR}/Examples/ExpectedLiteExample.cpp")
     set_property(TARGET ExpectedLiteExample PROPERTY CXX_STANDARD 11)
-    target_include_directories( ExpectedLiteExample 
-                                SYSTEM PRIVATE "${CMAKE_CURRENT_LIST_DIR}/External/expected-lite/include"
-                                PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Include")
+    target_include_directories( ExpectedLiteExample PRIVATE 
+                                "${CMAKE_CURRENT_LIST_DIR}/External/expected-lite/include"
+                                "${CMAKE_CURRENT_LIST_DIR}/Include")
     
     add_executable(StdExpectedExample "${CMAKE_CURRENT_LIST_DIR}/Examples/StdExpectedExample.cpp")
     set_property(TARGET StdExpectedExample PROPERTY CXX_STANDARD 23)
