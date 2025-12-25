@@ -439,13 +439,13 @@ namespace DS
         
         template<>
         thread_local DS::ErrorTrace InlinerV::GlobalErrorTrace = {};
-    }
-
-    inline void ProcessError(DS::ErrorTrace et) 
-    {
-        if(InlinerV::GlobalErrorTrace.Stack.empty())
-            InlinerV::GlobalErrorTrace = et;
-        return;
+        
+        inline void ProcessError(DS::ErrorTrace et) 
+        {
+            if(InlinerV::GlobalErrorTrace.Stack.empty())
+                InlinerV::GlobalErrorTrace = et;
+            return;
+        }
     }
 
     #define DS_ERROR_MSG(msg) \
