@@ -260,6 +260,8 @@ namespace DS
         return (std::string)(value);
     }
 
+    struct DummyTag {};
+
     template<   typename T, 
                 typename std::enable_if
                 <
@@ -270,7 +272,7 @@ namespace DS
                 >
     std::string ToString(const T&)
     {
-        static_assert(  std::false_type::value, 
+        static_assert(  std::is_same<T, DummyTag>::value, 
                         "--> DS Error: No valid conversion to string for this type. "
                         "Either provide a string operator or "
                         "consider using DS_ASSERT_TRUE() or DS_ASSERT_FALSE() instead");
