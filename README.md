@@ -76,10 +76,9 @@ namespace DS
     
     struct Result : public expected<T, DS::ErrorTrace>
     {
-        inline T DefaultOr();                       //Alias for `value_or(T())`
-        inline bool HasValue();                     //Alias for `has_value()`
-        inline const T& Value();                    //Alias for `value()`
-        inline const DS::ErrorTrace& Error();       //Alias for `error()`
+        inline bool HasValue();                     //Does it have a value?
+        inline const T& Value();                    //Get value without checking
+        inline const DS::ErrorTrace& Error();       //Get error without checking
         ...
     }
     struct Error : public unexpected<DS::ErrorTrace>;
@@ -91,9 +90,9 @@ namespace DS
 DS::Result<int> MyFunction(...);
 ```
 
-### Creates An Error Trace With Message
-- `DS_ERROR_MSG(msg)`
-- `DS_ERROR_MSG_EC(msg, errorCode)`
+### Creates An Error Trace With Message (and with error code)
+- `DS::Error DS_ERROR_MSG(const std::string& msg)`
+- `DS::Error DS_ERROR_MSG_EC(const std::string& msg, int errorCode)`
 
 ```cpp
 DS::Result<int> MyFunction()
@@ -159,44 +158,14 @@ string.
 }
 ```
 
-### Getting Result Value And Act On Failure
-
-There are 2 part when trying to get a value from a ds result object. First is getting the value 
-itself and the second part is what to do when there's a failure.
-
-- `DS_VALUE_OR()`: returns the result value or register error if any and return default value. 
-It is used as a chained function call.
-- `DS_CHECK_PREV()`: Checks any previous error registered with `DS_VALUE_OR()` and return the first 
-error as a result for the current function. Otherwise continues execution. This also clears any 
-registered error.
-- `DS_CHECK_PREV_ACT(failedActions)`: Same as `DS_CHECK_PREV()` except performs the failed action(s)
-instead of returning the error. `DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro inside the
-`failedActions`.
-
-```cpp
-DS::Result<int> MyFunction();
-
-DS::Result<int> MyFunction2()
-{
-    int myInt = MyFunction().DS_VALUE_OR();
-    myInt = MyFunction().DS_VALUE_OR();
-    DS_CHECK_PREV();    //Will not continue if any of the previous `MyFunction()` calls failed.
-                        //Returns the first error.
-    ...
-    return 0;
-}
-
-```
-
-
-### Try To Assign Result Value From A Function
+### Assigning Value From A Result. Return Error If Failed.
 - `DS_TRY()`: will return the error if failed. Same as `DS_VALUE_OR(); DS_CHECK_PREV()`
-- `DS_TRY_ACT(failedActions)`: will execute `failedActions` if failed. Same as `DS_VALUE_OR(); 
-DS_CHECK_PREV_ACT(failedActions)`
+- `DS_TRY_ACT(failedActions)`: will execute `failedActions` if failed. In `failedActions`, 
+    the `DS::ErrorTrace` being returned is accessible with `DS_TMP_ERROR` macro.
 
-`DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro.
-
-**Do not omit curly braces when using this macro**
+> [!CAUTION]
+> **Do not omit curly braces when using this macro**
+> **The macros only works with assignment, i.e. `<var> = <Result>.DS_TRY();`**
 
 ```cpp
 DS::Result<int> MyFunction();
@@ -217,9 +186,11 @@ bool MyFunction2()
     ...
     int myErrorCode = 0;
     myInt = MyFunction().DS_TRY_ACT(//Or accessing the error code:
-                                    myErrorCode = DS_TMP_ERROR.ErrorCode);
+                                    myErrorCode = DS_TMP_ERROR.ErrorCode;
+                                    ...
+                                    return false);
     ...
-    //Do this
+    //Or simply returning a boolean
     if(...)
     {
         myInt = MyFunction().DS_TRY_ACT(return false);
@@ -233,45 +204,44 @@ bool MyFunction2()
 }
 ```
 
-## Advance Usages
+If for any reason, you cannot use the assignment to extract the value, continue below.
 
-### Unwrapping to a variable
+### Getting Result Value And Act On Failure
 
-The difference between unwrapping macros and try macros is that the unwrapping macros will return or 
-perform failed actions before the assignment. Whereas the try macros will assign a default value if 
-failed, before returning or performing the failed actions.
+There are 2 part when trying to get a value from a ds result object. First is getting the value 
+itself and the second part is what to do when there's a failure.
 
-The other difference is that most of the unwrapping macros can be used with omitted curly braces.
-
-- `DS_UNWRAP_DECL(unwrapVar, op)`: **Do not omit curly braces when using this macro**
-- `DS_UNWRAP_ASSIGN(unwrapVar, op)`
-- `DS_UNWRAP_VOID(op)`
-- `DS_UNWRAP_DECL_ACT(unwrapVar, op, failedActions)`: **Do not omit curly braces when using this macro**
-- `DS_UNWRAP_ASSIGN_ACT(unwrapVar, op, failedActions)`
-- `DS_UNWRAP_VOID_ACT(op, failedActions)`
+- `DS_VALUE_OR()`: Returns the value if the result contains any, if not it will register the error
+and return the default value. No restrictions on how to use this.
+- `DS_CHECK_PREV()`: Checks any registered error with `DS_VALUE_OR()` and return the first 
+error as a result for the current function. Otherwise continues execution. This also clears any 
+registered error.
+- `DS_CHECK_PREV_ACT(failedActions)`: Same as `DS_CHECK_PREV()` except performs the failed action(s)
+instead of returning the error. `DS::ErrorTrace` is accessible with `DS_TMP_ERROR` macro inside the
+`failedActions`.
 
 ```cpp
-DS::Result<int> MyFunction();
+DS::Result<int> MyFunction(int);
 
-DS::Result<void> MyVoidFunction()
+DS::Result<int> MyFunction2()
 {
-    //Declaring a variable and unwrap to it
-    DS_UNWRAP_DECL(int myInt, MyFunction());
-    
-    //Unwrap and assigning to existing variable
-    DS_UNWRAP_ASSIGN(myInt, MyFunction());
-    
-    //Only check success and print error if failed
-    DS_UNWRAP_VOID_ACT(MyFunction(), std::cout << DS_TMP_ERROR.ToString() << std::endl);
-    return {};
+    int myInt = MyFunction(1).DS_VALUE_OR();
+    if(...)
+        myInt = MyFunction(2).DS_VALUE_OR();    //Okay
+    DS_CHECK_PREV();    //Will not continue if any of the previous `MyFunction()` calls failed.
+                        //Returns the first error.
+    ...
+    return 0;
 }
 
-{
-    //Unwrapping a void function
-    DS_UNWRAP_VOID(MyVoidFunction());
-}
 ```
+
+> [!CAUTION]
+> **`DS_CHECK_PREV()` (and `DS_CHECK_PREV_ACT(...)`) must be used within the same translation unit.**
+> i.e. `DS_CHECK_PREV()` must be used within the same `.cpp` file for checking any registered error 
+> by `DS_VALUE_OR()`.
 
 ### Examples
 
-See `./Examples/ExampleCommon.cpp` for all the usage examples and example outputs
+See `FunctionWithAssert()` in `Examples/ExampleCommon.cpp` and `Examples/TryExamples.cpp` for all the 
+usage examples and example outputs.
