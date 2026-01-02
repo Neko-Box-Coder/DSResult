@@ -124,6 +124,32 @@ DS::Result<int> MyFunction()
 }
 ```
 
+### Appending Error Trace
+- `DS::Error& DS_APPEND_TRACE(DS::Error& error)`
+
+```cpp
+DS::Result<int> MyFunction()
+{
+    int myVal = 5;
+    return DS_ERROR_MSG("Failed" + DS_STR(myVal));
+}
+
+#include <iostream>
+int main()
+{
+    DS::Result<int> res = MyFunction();
+    if(!res.HasValue())
+    {
+        DS_APPEND_TRACE(res.Error());       //Add this line to error trace
+        std::cout << res.Error().ToString() << std::endl;
+        //Or
+        //std::cout << DS_APPEND_TRACE(res.Error()).ToString() << std::endl;
+        return 1;
+    }
+    return 0;
+}
+```
+
 ### Return If Assertion Failed
 - `DS_ASSERT_TRUE(op)`
 - `DS_ASSERT_FALSE(op)`
