@@ -4,3 +4,6 @@
 [submodule "External/expected-lite"]
 	path = External/expected-lite
 	url = https://github.com/martinmoene/expected-lite.git
+[submodule "External/debugbreak"]
+	path = External/debugbreak
+	url = https://github.com/Neko-Box-Coder/debugbreak.git

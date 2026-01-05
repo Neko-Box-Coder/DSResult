@@ -19,6 +19,7 @@ set_property(CACHE DS_EXPECTED_BACKEND PROPERTY STRINGS "TL"
                                                         "CUSTOM")
 
 option(DS_NO_PATH "Don't show file path for error trace" off)
+option(DS_USE_DEBUG_BREAK "Break when an error with a message is created" off)
 
 add_library(DSResult INTERFACE)
 target_include_directories(DSResult INTERFACE "${CMAKE_CURRENT_LIST_DIR}/Include")
@@ -43,6 +44,12 @@ if(${DS_NO_PATH})
     target_compile_definitions(DSResult INTERFACE DS_NO_PATH=1)
 else()
     target_compile_definitions(DSResult INTERFACE DS_NO_PATH=0)
+endif()
+
+if(${DS_USE_DEBUG_BREAK})
+    target_compile_definitions(DSResult INTERFACE DS_USE_DEBUG_BREAK=1)
+else()
+    target_compile_definitions(DSResult INTERFACE DS_USE_DEBUG_BREAK=0)
 endif()
 
 if(${DS_BUILD_EXAMPLES})

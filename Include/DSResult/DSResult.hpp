@@ -40,10 +40,14 @@
     #define INTERNAL_DS_FUNC_CONSTEVAL
 #endif
 
-#if defined(DS_NO_PATH) && DS_NO_PATH
+#if DS_NO_PATH
     #define DS_PATH "(Private File)"
 #else
     #define DS_PATH __FILE__
+#endif
+
+#if DS_USE_DEBUG_BREAK
+    #include "../../External/debugbreak/debugbreak.h"
 #endif
 
 #include <string>
@@ -137,6 +141,9 @@ namespace DS
                                                                                     ErrorCode(0)
         {
             Stack.emplace_back(element);
+            #if !defined(NDEBUG) && DS_USE_DEBUG_BREAK
+                debug_break();
+            #endif
         }
 
         inline ErrorTrace(  const std::string& msg, 
@@ -146,6 +153,9 @@ namespace DS
                                                 ErrorCode(errorCode)
         {
             Stack.emplace_back(element);
+            #if !defined(NDEBUG) && DS_USE_DEBUG_BREAK
+                debug_break();
+            #endif
         }
 
         inline ErrorTrace& operator=(const ErrorTrace& other)

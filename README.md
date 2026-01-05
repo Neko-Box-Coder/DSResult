@@ -22,7 +22,9 @@ By default it uses "TartanLlama/expected" as expected container backend.
 You can change the backend option by setting the `DS_EXPECTED_BACKEND` cmake option to either 
 `TL`, `LITE`, `STD` or `CUSTOM`.
 
-If you don't want any file paths in the binary, you can set the `DS_NO_PATH` to true in cmake.
+If you don't want any file paths in the binary, you can set `DS_NO_PATH` to true in cmake.
+If you want to break in a debugger if an error is created, you can set `DS_USE_DEBUG_BREAK` to true.
+This will include `External/debugbreak/debugbreak.h` into the header.
 
 Then you can include DSResult with `#include "DSResult/DSResult.hpp"`.
 
@@ -44,6 +46,12 @@ Define one of the following macros to choose a different backend
 If you don't want any file paths in the binary, define the following macro
 ```cpp
 #define DS_NO_PATH 1
+```
+
+If you want to break in a debugger if an error is created, define the following macro
+This will include `External/debugbreak/debugbreak.h` into the header.
+```cpp
+#define DS_USE_DEBUG_BREAK 1
 ```
 
 If you are using a custom expected like container, you need to define the macros `DS_EXPECTED_TYPE` 
