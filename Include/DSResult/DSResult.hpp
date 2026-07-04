@@ -234,14 +234,23 @@ namespace DS
         static constexpr bool Value = decltype(Test<T>(1))::value;
     };
 
-    template<typename T, typename std::enable_if<std::is_pointer<T>::value, bool>::type = true>
+    template<typename T>
+    struct InternalNonStringPointer
+    {
+        static constexpr bool Value =   std::is_pointer<T>::value && 
+                                        !std::is_same<T, char*>::value &&
+                                        !std::is_same<T, const char*>::value;
+    };
+
+    template<typename T, typename std::enable_if<   InternalNonStringPointer<T>::Value, 
+                                                    bool>::type = true>
     std::string ToString(const T& value)
     {
         return std::to_string((unsigned long long)(void*)value);
     }
 
     template<   typename T, 
-                typename std::enable_if<!std::is_pointer<T>::value &&
+                typename std::enable_if<!InternalNonStringPointer<T>::Value &&
                                         InternalHasToString<T>::Value, bool>::type = true>
     std::string ToString(const T& value)
     {
@@ -249,7 +258,7 @@ namespace DS
     }
 
     template<   typename T, 
-                typename std::enable_if<!std::is_pointer<T>::value &&
+                typename std::enable_if<!InternalNonStringPointer<T>::Value &&
                                         !InternalHasToString<T>::Value && 
                                         InternalHasStringCtor<T>::Value, bool>::type = true>
     std::string ToString(const T& value)
@@ -260,7 +269,7 @@ namespace DS
     template<   typename T, 
                 typename std::enable_if
                 <
-                    !std::is_pointer<T>::value &&
+                    !InternalNonStringPointer<T>::Value &&
                     !InternalHasToString<T>::Value &&
                     !InternalHasStringCtor<T>::Value &&
                     std::is_convertible<T, std::string>::value, bool>::type = true
@@ -275,7 +284,7 @@ namespace DS
     template<   typename T, 
                 typename std::enable_if
                 <
-                    !std::is_pointer<T>::value &&
+                    !InternalNonStringPointer<T>::Value &&
                     !InternalHasToString<T>::Value && 
                     !InternalHasStringCtor<T>::Value &&
                     !std::is_convertible<T, std::string>::value, bool>::type = true
