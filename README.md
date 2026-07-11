@@ -133,7 +133,7 @@ DS::Result<int> MyFunction()
 ```
 
 ### Appending Error Trace
-- `DS::Error& DS_APPEND_TRACE(DS::Error& error)`
+- `DS::ErrorTrace& DS_APPEND_TRACE(DS::ErrorTrace& error)`
 
 ```cpp
 DS::Result<int> MyFunction()
